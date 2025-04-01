@@ -1,0 +1,16 @@
+{
+  "name": "scorecard-nodejs-openai-basic",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "openai": "^4.91.1",
+    "scorecard-ai": "^0.6.1"
+  }
+}
