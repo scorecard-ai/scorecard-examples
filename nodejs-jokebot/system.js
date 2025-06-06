@@ -1,14 +1,21 @@
-import { generateText } from 'ai';
-import { openai } from '@ai-sdk/openai';
-import dotenv from 'dotenv';
+import { generateText } from "ai";
+import { openai } from "@ai-sdk/openai";
+import dotenv from "dotenv";
 
 dotenv.config();
+
+const STYLE_DESCRIPTIONS = {
+  witty: "short, clever and witty",
+  "dad-joke": "cheesy dad joke that's punny and groan-worthy",
+};
 
 export async function runJokeBot(input, config) {
   const { text } = await generateText({
     model: openai(config.model),
-    prompt: `Tell a short, funny joke about ${input.topic}.`,
-    temperature: 0.8,
+    prompt: `Tell me a joke about ${input.topic}.${
+      config.style ? ` Style: ${STYLE_DESCRIPTIONS[config.style]}` : ""
+    }`,
+    temperature: config.temperature,
     maxTokens: 100,
   });
 
@@ -19,7 +26,14 @@ export async function runJokeBot(input, config) {
 
 // Test locally
 if (import.meta.url === `file://${process.argv[1]}`) {
-  const topic = process.argv[2] || 'programming';
-  const result = await runJokeBot({ topic }, { model: 'gpt-4.1-mini' });
+  const topic = process.argv[2] || "programming";
+  const result = await runJokeBot(
+    { topic },
+    {
+      model: "gpt-4.1-mini",
+      style: "witty",
+      temperature: 0.8,
+    }
+  );
   console.log(`\n${result.joke}\n`);
 }
