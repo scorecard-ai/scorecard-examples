@@ -1,160 +1,131 @@
 import Scorecard from "scorecard-ai";
 import dotenv from "dotenv";
-import { createInterface } from "readline/promises";
 import fs from "fs";
 
 dotenv.config();
 
-// Helper function to prompt user input
-const prompt = async (question, defaultValue = "") => {
-  const rl = createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  });
-
-  const answer = await rl.question(
-    `${question} ${defaultValue ? `(default: ${defaultValue}) ` : ""}: `
-  );
-  rl.close();
-  return answer.trim() || defaultValue;
-};
-
-// Check if eval-params.json already exists
-if (fs.existsSync("eval-params.json")) {
-  console.log("⚠️  eval-params.json already exists!");
-  console.log(
-    "Running setup again will create new resources and overwrite the existing file.\n"
-  );
-
-  const answer = await prompt("Are you sure you want to continue? (y/N)", "N");
-
-  if (answer.toLowerCase() !== "y" && answer.toLowerCase() !== "yes") {
-    console.log("Setup cancelled.");
-    process.exit(0);
-  }
-  console.log("");
-}
-
-const sc = new Scorecard({
+const scorecard = new Scorecard({
   apiKey: process.env.SCORECARD_API_KEY,
 });
 
-console.log("🎭 Setting up Joke Bot...\n");
+console.log("🎭 Setting up Joke Bot...");
 
-// Prompt for project name
-const projectName = await prompt("Enter project name", "joke bot demo");
+/**
+ * Idempotently creates a joke bot project.
+ */
+async function getOrCreateProject() {
+  const projectName = "Joke Bot";
+  for await (const project of scorecard.projects.list()) {
+    if (project.name === projectName) {
+      console.log(`- ${projectName} project already exists, id: ${project.id}`);
+      return project;
+    }
+  }
 
-// Create a project
-const project = await sc.projects.create({
-  name: projectName,
-  description: "A joke bot demo",
-});
-console.log(`📁 Project ID: ${project.id}\n`);
+  const project = await scorecard.projects.create({
+    name: projectName,
+    description: "A joke bot demo",
+  });
+  console.log(`- Created ${projectName} project, id: ${project.id}`);
+  return project;
+}
 
-// Create the system
-const system = await sc.systems.create(project.id, {
-  name: "Joke Bot",
-  description: "A joke bot demo",
-  inputSchema: {
-    type: "object",
-    properties: {
-      topic: { type: "string" },
-    },
-    required: ["topic"],
-  },
-  configSchema: {
-    type: "object",
-    properties: {
-      model: { type: "string" },
-      style: {
-        type: "string",
-        enum: ["witty", "dad-joke"], // TODO: add more styles
+/**
+ * Idempotently creates a testset for the joke bot with a few testcases.
+ */
+async function getOrCreateTestset(projectId) {
+  const testsetName = "Joke Topics";
+  for await (const testset of scorecard.testsets.list(projectId)) {
+    if (testset.name === testsetName) {
+      console.log(`- ${testsetName} testset already exists, id: ${testset.id}`);
+      return testset;
+    }
+  }
+
+  const testset = await scorecard.testsets.create(projectId, {
+    name: testsetName,
+    description: "A joke bot demo",
+    jsonSchema: {
+      type: "object",
+      properties: {
+        topic: { type: "string" },
       },
-      temperature: {
-        type: "number",
-        minimum: 0,
-        maximum: 2,
-      },
+      required: ["topic"],
     },
-    required: ["model"],
-  },
-  outputSchema: {
-    type: "object",
-    properties: {
-      joke: { type: "string" },
+    fieldMapping: {
+      inputs: ["topic"],
+      expected: [],
+      metadata: [],
     },
-    required: ["joke"],
-  },
-});
+  });
+  await scorecard.testcases.create(testset.id, {
+    items: ["programming", "coffee", "meetings"].map((topic) => ({
+      jsonData: { topic },
+    })),
+  });
+  console.log(`🎭 Created ${testsetName} testset, id: ${testset.id}\n`);
+  return testset;
+}
 
-// Create two configs to compare
-const configA = await sc.systemConfigs.create(system.id, {
-  name: "GPT-4.1-nano - Witty",
-  systemId: system.id,
-  config: {
-    model: "gpt-4.1-nano",
-    style: "witty",
-    temperature: 0.7,
-  },
-});
+/**
+ * Idempotently creates a system for the joke bot.
+ */
+async function getOrCreateSystem(projectId) {
+  const systemName = "Joke Bot";
+  const system = await scorecard.systems.upsert(projectId, {
+    config: { model: "gpt-4.1", style: "dad-joke", temperature: 0.9 },
+    description: "Bot that tells jokes",
+    name: systemName,
+  });
+  await scorecard.systems.versions.upsert(system.id, {
+    config: { model: "gpt-4.1-nano", style: "dad-joke", temperature: 0.9 },
+    name: "Dad joke nano",
+  });
+  console.log(`- Upserted ${systemName} system, id: ${system.id}`);
+  return system;
+}
 
-const configB = await sc.systemConfigs.create(system.id, {
-  name: "GPT-4.1 - Dad Jokes",
-  systemId: system.id,
-  config: {
-    model: "gpt-4.1",
-    style: "dad-joke",
-    temperature: 0.9,
-  },
-});
+/**
+ * Creates a "humor" metric. Note that this is not idempotent.
+ */
+async function createMetrics(projectId) {
+  const metricName = "Humor";
+  const metric = await scorecard.metrics.create(projectId, {
+    name: metricName,
+    evalType: "ai",
+    outputType: "int",
+    evalModelName: "gpt-4.1",
+    promptTemplate: String.raw`You are a humor evaluator for the topic "{{ inputs.topic }}". How funny is the following joke?
 
-// Create test cases
-const testset = await sc.testsets.create(project.id, {
-  name: "Joke Topics",
-  description: "A joke bot demo",
-  jsonSchema: {
-    type: "object",
-    properties: {
-      topic: { type: "string" },
-    },
-    required: ["topic"],
-  },
-  fieldMapping: {
-    inputs: ["topic"],
-    expected: [],
-    metadata: [],
-  },
-});
+    <joke>
+    {{outputs.joke}}
+    </joke>
+    
+    {{ gradingInstructionsAndExamples }}`,
+  });
+  console.log(`- Created ${metricName} metric, id: ${metric.id}`);
+  return [metric];
+}
 
-await sc.testcases.create(testset.id, {
-  items: ["programming", "coffee", "meetings"].map((topic) => ({
-    jsonData: { topic },
-  })),
-});
+const project = await getOrCreateProject();
+const testset = await getOrCreateTestset(project.id);
+const system = await getOrCreateSystem(project.id);
+const metrics = await createMetrics(project.id);
 
-// maybe write this to a eval-params.json file
+// Write the created Scorecard resources to a eval-params.json file
 fs.writeFileSync(
   "eval-params.json",
   JSON.stringify(
     {
       projectId: project.id,
       systemId: system.id,
-      configAId: configA.id,
-      configBId: configB.id,
       testsetId: testset.id,
-      metricIds: [],
+      metricIds: metrics.map((m) => m.id),
     },
     null,
     2
   )
 );
 console.log(
-  `✅ Done setting up your project! Visit: https://app.scorecard.io/projects/${project.id}`,
-  {
-    projectId: project.id,
-    systemId: system.id,
-    configAId: configA.id,
-    configBId: configB.id,
-    testsetId: testset.id,
-  }
+  `✅ Done setting up your project! Visit: ${scorecard.baseAppURL}/projects/${project.id}`
 );

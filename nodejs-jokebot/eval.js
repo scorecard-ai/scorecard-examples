@@ -1,69 +1,44 @@
-import Scorecard from 'scorecard-ai';
-import { runAndEvaluate } from 'scorecard-ai/lib/runAndEvaluate';
-import dotenv from 'dotenv';
-import fs from 'fs';
-import { runJokeBot } from './system.js';
+import Scorecard from "scorecard-ai";
+import { runAndEvaluate } from "scorecard-ai/lib/runAndEvaluate";
+import dotenv from "dotenv";
+import fs from "fs";
+import { runJokeBot } from "./system.js";
 
 dotenv.config();
 
-const sc = new Scorecard({
+const scorecard = new Scorecard({
   apiKey: process.env.SCORECARD_API_KEY,
 });
 
-const {
-  projectId,
-  systemId,
-  testsetId,
-  metricIds = [],
-  configAId,
-  configBId,
-} = JSON.parse(fs.readFileSync('eval-params.json', 'utf8'));
+const { projectId, systemId, testsetId, metricIds } = JSON.parse(
+  fs.readFileSync("eval-params.json", "utf8")
+);
 
-// Get system configs
-const { data: configs } = await sc.systemConfigs.list(systemId);
+// Get system versions
+const { versions: systemVersions } = await scorecard.systems.get(systemId);
 
-const configA = configs.find(({ id }) => id === configAId);
-const configB = configs.find(({ id }) => id === configBId);
+console.log(`Running ${systemVersions.length} experiments:`);
 
-console.log('🎭 Running experiment with configs:\n', {
-  configA,
-  configB,
-});
+// Run and evaluate each system version
+for (const { name: systemVersionName, id: systemVersionId } of systemVersions) {
+  console.log(`\tRunning ${systemVersionName}...`);
+  const run = await runAndEvaluate(scorecard, {
+    projectId,
+    testsetId,
+    metricIds,
+    system: async (inputs, systemVersion) => {
+      console.log(`\t\t\tRunning testcase: ${inputs.topic}...`);
+      return await runJokeBot(inputs, systemVersion.config);
+    },
+    systemVersionId,
+  });
 
-if (metricIds.length > 0) {
-  console.log('📊 Using metrics:', metricIds);
-} else {
-  console.log(
-    `No metrics configured. Configure metrics at https://app.scorecard.io/projects/${projectId}/metrics and add metric IDs to eval-params.json to enable automated scoring.`,
-  );
+  console.log(`\t\t${run.url}`);
 }
 
-// Create an experiment
-const runA = await runAndEvaluate(sc, {
-  projectId,
-  testsetId,
-  metricIds,
-  system: async (inputs) => {
-    return await runJokeBot(inputs, configA.config);
-  },
-  systemConfigId: configA.id,
-});
-
-const runB = await runAndEvaluate(sc, {
-  projectId,
-  testsetId,
-  metricIds,
-  system: async (inputs) => {
-    return await runJokeBot(inputs, configB.config);
-  },
-  systemConfigId: configB.id,
-});
-
 console.log(`
-  ✅ Done! View your experiment:
-  Config A: https://app.scorecard.io/projects/${projectId}/runs/${runA.id}
-  Config B: https://app.scorecard.io/projects/${projectId}/runs/${runB.id}
-  
-  Try it locally:
-  node system.js "pizza"
-  `);
+✅ Done!
+
+Try it locally:
+node system.js "pizza"
+`);

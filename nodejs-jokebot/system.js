@@ -9,6 +9,13 @@ const STYLE_DESCRIPTIONS = {
   "dad-joke": "cheesy dad joke that's punny and groan-worthy",
 };
 
+/**
+ * Run the joke bot with the given input and config.
+ *
+ * @param {{ topic: string }} input - The input for the joke bot.
+ * @param {{ model: string, style: string, temperature: number }} config - The configuration for the AI system.
+ * @returns {Promise<{ joke: string }>} The joke string.
+ */
 export async function runJokeBot(input, config) {
   const { text } = await generateText({
     model: openai(config.model),

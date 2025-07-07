@@ -6,43 +6,50 @@ Build and compare AI systems in 5 minutes.
 
 1. **Install and configure**
 
-   ```bash
-   npm install
-   cp .env.example .env
-   # Add your API keys to .env
-   ```
+```sh
+npm install
+cp .env.example .env
+# Add your Scorecard and OpenAI API keys to .env
+```
 
 2. **Create everything**
 
-   ```bash
-   node setup.js
-   ```
+```sh
+node setup.js
+```
 
-This script will create a project in your Scorecard organization containing the demo system and a couple of example system configs. These will be saved in eval-params.json.
+This script will create a project in your Scorecard organization containing the demo system, some test cases, an LLM-as-a-judge metric, and a couple of example system versions. These will be saved in eval-params.json.
 
 3. **Try it locally**
 
-   ```bash
-   node system.js "pizza"
-   ```
+```sh
+node system.js "pizza"
+```
 
 4. **Run your first evaluation**
-   ```bash
-   node eval.js
-   ```
+
+```sh
+node eval.js
+```
 
 ## What Just Happened?
 
-You created a **System** - a testable AI component with:
+You created a **System** - a testable AI component with the config:
 
-- **Inputs**: `{ topic: "pizza" }`
-- **Config**: `{ model: "gpt-4.1-nano" }`
-- **Output**: `{ joke: "..." }`
+```json
+{
+   model: "gpt-4.1",
+   style: "dad-joke",
+   temperature: 0.9
+}
+```
 
-Then you created two **Configurations** to compare:
+This is the production config, named "Version 1" by default.
 
-- Config A: Uses gpt-4.1-nano (faster, cheaper)
-- Config B: Uses gpt-4.1 (smarter, costlier)
+Then you created `Dad joke nano`, another **System Version** so that you could compare:
+
+- "Version 1", which uses `gpt-4.1` (smarter, more expensive)
+- "Dad joke nano", which uses `gpt-4.1-nano` (faster, cheaper)
 
 Finally, you ran an **Experiment** to see which model tells better jokes!
 
@@ -50,42 +57,11 @@ Finally, you ran an **Experiment** to see which model tells better jokes!
 
 Instead of manually testing "Does GPT-4.1 tell better jokes?", you:
 
-1. Defined your system once
-2. Created configurations to compare
+1. Created a system once
+2. Created an experimental system version
 3. Let Scorecard run the experiment
 
-Now you can see side-by-side results and make data-driven decisions.
-
-## Adding Metrics for Automated Scoring
-
-To get automated quality scores for your joke outputs:
-
-1. **Create an LLM-as-a-Judge metric** in the Scorecard UI:
-
-   - Go to your project in Scorecard
-   - Navigate to the Metrics section
-   - Create a new metric that evaluates joke quality (e.g., "How funny is this joke on a scale of 1-5?\n{{outputs.joke}}")
-
-2. **Add the metric ID to your config**:
-
-   - Copy the metric ID from the UI
-   - Add it to the `metricIds` array in `eval-params.json`:
-
-   ```json
-   {
-     "projectId": "173",
-     "systemId": "...",
-     "testsetId": "...",
-     "metricIds": ["your-metric-id-here"]
-   }
-   ```
-
-3. **Run evaluation with metrics**:
-   ```bash
-   node eval.js
-   ```
-
-Now your experiments will include automated scoring alongside the raw outputs!
+Now you can see side-by-side results with automated scoring and make data-driven decisions.
 
 ## Next Steps
 
