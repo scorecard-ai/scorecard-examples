@@ -1,4 +1,0 @@
-traceloop-sdk
-openai>=1.0.0
-jupyter
-nest-asyncio 
