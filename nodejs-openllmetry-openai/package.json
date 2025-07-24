@@ -1,0 +1,7 @@
+{
+  "dependencies": {
+    "@traceloop/node-server-sdk": "^0.14.4",
+    "dotenv": "^17.2.0",
+    "openai": "^5.10.2"
+  }
+}
