@@ -25,11 +25,11 @@ Create a `.env` file with the following variables:
 
 ```bash
 # OpenAI Configuration
-OPENAI_API_KEY=your_openai_api_key_here
+OPENAI_API_KEY=<YOUR_OPENAI_API_KEY>
 
 # OpenLLMetry Configuration for Scorecard
-TRACELOOP_BASE_URL=https://telemetry.getscorecard.ai:4318
-TRACELOOP_HEADERS="Authorization=Bearer <YOUR_SCORECARD_TELEMETRY_KEY>"
+TRACELOOP_BASE_URL=https://tracing.scorecard.io/otel/v1/traces
+TRACELOOP_HEADERS="Authorization=Bearer <YOUR_SCORECARD_KEY>"
 ```
 
 ### 3. Initialize and Configure Tracing
@@ -53,12 +53,11 @@ traceloop.initialize({
 });
 ```
 
-### 4. Structure Your Code with Workflows and Tasks
+### 4. Structure Your Code
 
 ```javascript
-// Create individual tasks for different operations
-async function createJoke() {
-  return await traceloop.withTask({ name: "joke_creation" }, async () => {
+async function simpleWorkflow() {
+  return await traceloop.withWorkflow({ name: "simple_chat" }, async () => {
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [{ role: "user", content: "Tell me a joke" }],
@@ -67,26 +66,7 @@ async function createJoke() {
   });
 }
 
-async function generateAuthor(joke) {
-  return await traceloop.withTask({ name: "author_generation" }, async () => {
-    const completion = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
-      messages: [
-        { role: "user", content: `add a author to the joke:\n\n${joke}` },
-      ],
-    });
-
-    return completion.choices[0].message.content;
-  });
-}
-
-// Group related tasks into workflows
-async function joke_workflow() {
-  return await traceloop.withWorkflow({ name: "joke_generator" }, async () => {
-    const joke = await createJoke();
-    await generateAuthor(joke);
-  });
-}
+simpleWorkflow();
 ```
 
 ### 5. Run Your Application
@@ -97,52 +77,10 @@ node index.js
 
 ### Getting Your Scorecard Credentials
 
-1. Visit [Scorecard Dashboard](https://app.getscorecard.ai)
-2. Navigate to your project's traces section
-3. Find your **Telemetry Key** in "Learn how to setup tracing" link there
-4. Use the telemetry endpoint: `https://telemetry.getscorecard.ai:4318`
-
-## Code Structure Explanation
-
-### Automatic Instrumentation
-
-OpenLLMetry automatically instruments your OpenAI calls without requiring code changes:
-
-```javascript
-// This call is automatically traced
-const completion = await openai.chat.completions.create({
-  model: "gpt-4o-mini",
-  messages: [{ role: "user", content: "Tell me a joke" }],
-});
-```
-
-### Manual Task Creation
-
-Use `traceloop.withTask()` to create custom spans for specific operations:
-
-```javascript
-async function createJoke() {
-  return await traceloop.withTask({ name: "joke_creation" }, async () => {
-    // Your code here - all operations inside will be part of this task
-    const completion = await openai.chat.completions.create({...});
-    return completion.choices[0].message.content;
-  });
-}
-```
-
-### Workflow Organization
-
-Use `traceloop.withWorkflow()` to group related tasks into logical workflows:
-
-```javascript
-async function joke_workflow() {
-  return await traceloop.withWorkflow({ name: "joke_generator" }, async () => {
-    const joke = await createJoke();        // Task 1
-    const author = await generateAuthor(joke); // Task 2
-    return { joke, author };
-  });
-}
-```
+1. Visit [Scorecard](https://app.getscorecard.ai)
+2. Navigate to your settings page
+3. Find your **Scorecard Key**
+4. Use the tracing endpoint: `https://tracing.scorecard.io/otel/v1/traces`
 
 ## Viewing Traces in Scorecard
 
