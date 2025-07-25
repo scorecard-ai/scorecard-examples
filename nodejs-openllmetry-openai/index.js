@@ -12,7 +12,7 @@ traceloop.initialize({
 });
 
 async function simpleWorkflow() {
-  return await traceloop.withWorkflow({ name: "simple_chat" }, async () => {
+  return traceloop.withWorkflow({ name: "simple_chat" }, async () => {
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [{ role: "user", content: "Tell me a joke" }],
