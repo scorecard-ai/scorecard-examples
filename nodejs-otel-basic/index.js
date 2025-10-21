@@ -1,3 +1,11 @@
+/**
+ * Example: OpenTelemetry + OpenAI + Scorecard
+ * 
+ * This example shows how to send OpenTelemetry traces to Scorecard.
+ * It fetches test cases from a Scorecard testset, runs an OpenAI workflow
+ * for each test case, and sends traces to Scorecard for evaluation.
+ */
+
 import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
 import { Resource } from "@opentelemetry/resources";
 import { BatchSpanProcessor } from "@opentelemetry/sdk-trace-base";
@@ -13,7 +21,7 @@ const OPENAI_API_KEY = "<YOUR_OPENAI_API_KEY>";
 const PROJECT_ID = "<YOUR_PROJECT_ID>";
 const TESTSET_ID = "<YOUR_TESTSET_ID>"; // https://app.scorecard.io/projects/<YOUR_PROJECT_ID>/testsets/<YOUR_TESTSET_ID>
 
-// Set up OpenTelemetry with Scorecard  
+// Set up OpenTelemetry with Scorecard
 const exporter = new OTLPTraceExporter({
   url: "https://tracing.scorecard.io/otel/v1/traces",
   headers: {
