@@ -1,0 +1,17 @@
+{
+  "name": "scorecard-nodejs-traceloop-basic",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@traceloop/node-server-sdk": "^0.19.1",
+    "openai": "^6.6.0",
+    "scorecard-ai": "^2.2.0"
+  }
+}
