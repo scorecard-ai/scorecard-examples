@@ -1,12 +1,20 @@
-# Python Logfire + OpenTelemetry Basic Example
+# Python Logfire + PydanticAI + OpenTelemetry Basic Example
 
-This example demonstrates how to use **Logfire**'s excellent instrumentation and developer experience while sending OpenTelemetry traces to Scorecard for evaluation. It shows a simple OpenAI workflow with automatic instrumentation.
+This example demonstrates how to use **Logfire** and **PydanticAI** together while sending OpenTelemetry traces to Scorecard for evaluation. It shows a simple AI agent with automatic instrumentation and structured outputs.
 
-## Why Logfire?
+## Why Logfire + PydanticAI?
+
+[PydanticAI](https://ai.pydantic.dev) is an agent framework by the Pydantic team that provides:
+
+- 🎯 **Type-safe agents** with structured outputs using Pydantic models
+- ✅ **Built-in validation** - ensures LLM responses match your schema
+- 🔄 **Automatic retries** and error handling
+- 🌟 **Native Logfire integration** - zero instrumentation code needed!
+- 🧩 **Model-agnostic** - works with OpenAI, Anthropic, Google, and more
 
 [Logfire](https://logfire.pydantic.dev) is an observability platform built by the Pydantic team that provides:
 
-- 🎯 **Automatic instrumentation** for OpenAI, Anthropic, FastAPI, Django, SQLAlchemy, and 30+ popular libraries
+- 🎯 **Automatic instrumentation** for PydanticAI, OpenAI, Anthropic, FastAPI, and 30+ libraries
 - 🎨 **Beautiful structured logging** with rich context and attributes
 - 🔧 **Ergonomic API** with type hints and excellent IDE support
 - 🚀 **Zero-boilerplate setup** compared to raw OpenTelemetry
@@ -64,13 +72,27 @@ logfire.configure(
 )
 ```
 
-### 2. Automatic OpenAI Instrumentation
+### 2. PydanticAI Agent with Structured Outputs
 
-With one line, Logfire automatically instruments OpenAI:
+Define a Pydantic model for structured responses:
 
 ```python
-logfire.instrument_openai(openai_client)
+class CatFact(BaseModel):
+    fact: str
+    category: str
+    is_surprising: bool
+
+agent = Agent(
+    'openai:gpt-4o-mini',
+    result_type=CatFact,
+    system_prompt='You are a cat expert.'
+)
 ```
+
+PydanticAI automatically:
+- Validates LLM outputs against your schema
+- Retries on validation failures
+- Integrates with Logfire (no manual instrumentation!)
 
 This captures:
 - Full request and response messages
@@ -78,19 +100,24 @@ This captures:
 - Token usage (prompt, completion, total)
 - Latency metrics
 - Cost estimation
-- Error details
+- Structured output validation
+- Error details and retries
 
-### 3. Structured Spans
+### 3. Running the Agent
 
-Create spans with structured attributes:
+Simply call the agent - PydanticAI + Logfire handle everything:
 
 ```python
-with logfire.span(
-    "generate-cat-facts",
-    scorecard_project_id=PROJECT_ID,
-) as span:
-    # Your code here
-    logfire.info("Processing prompt", prompt=prompt)
+async def run_workflow(prompt):
+    with logfire.span("generate-cat-facts", **{"scorecard.projectId": PROJECT_ID}):
+        logfire.info("Processing prompt", prompt=prompt)
+        
+        # PydanticAI automatically creates spans and validates output
+        result = await agent.run(prompt)
+        cat_fact = result.data  # Validated CatFact model
+        
+        logfire.info("Generated cat fact", fact=cat_fact.fact)
+        return cat_fact
 ```
 
 ### 4. Automatic Exception Tracking
@@ -106,10 +133,12 @@ except Exception as e:
 
 ## Key Differences from Raw OpenTelemetry
 
-| Feature | Raw OpenTelemetry | Logfire |
-|---------|------------------|---------|
+| Feature | Raw OpenTelemetry | Logfire + PydanticAI |
+|---------|------------------|---------------------|
 | Setup complexity | ~30 lines | ~5 lines |
-| OpenAI instrumentation | Manual span creation | Automatic with `instrument_openai()` |
+| LLM instrumentation | Manual span creation | Automatic (zero code!) |
+| Structured outputs | Manual parsing | Pydantic validation |
+| Output validation | Not included | Built-in with retries |
 | Structured logging | Manual attributes | Built-in with type hints |
 | Exception handling | Manual `record_exception()` | Automatic capture |
 | IDE support | Limited | Full type hints |
@@ -117,9 +146,11 @@ except Exception as e:
 
 ## Automatic Instrumentation Available
 
-Logfire can automatically instrument:
+**PydanticAI** integrates automatically with Logfire - no manual instrumentation needed!
 
-- **LLMs**: OpenAI, Anthropic, Google GenAI, LangChain, LiteLLM, LlamaIndex, Mirascope
+**Logfire** can also automatically instrument:
+
+- **LLMs**: PydanticAI, OpenAI, Anthropic, Google GenAI, LangChain, LiteLLM, LlamaIndex, Mirascope
 - **Web Frameworks**: FastAPI, Django, Flask, Starlette, AIOHTTP
 - **Databases**: SQLAlchemy, Psycopg, AsyncPG, PyMongo, Redis
 - **HTTP Clients**: HTTPX, Requests, AIOHTTP
@@ -157,7 +188,10 @@ After running the example, you should see:
 ```
 [Logfire] Initialized with Scorecard OTLP endpoint
 Running workflow with prompt: Tell me an interesting fact about cats
-Result: cats have an incredible sense of smell that is 10,000 to 100,000 times more sensitive than humans!
+
+✨ Cat Fact: Cats have a specialized collarbone that allows them to always land on their feet when falling, a reflex known as the "righting reflex."
+📁 Category: anatomy
+🤔 Surprising: True
 
 [Logfire] Flushing traces to Scorecard...
 [Logfire] All traces sent. Check Scorecard for traces!
@@ -171,15 +205,17 @@ Result: cats have an incredible sense of smell that is 10,000 to 100,000 times m
 
 ## Learn More
 
+- [PydanticAI Documentation](https://ai.pydantic.dev)
 - [Logfire Documentation](https://logfire.pydantic.dev)
-- [Logfire Integrations](https://logfire.pydantic.dev/docs/integrations/)
+- [Logfire + PydanticAI Integration](https://logfire.pydantic.dev/docs/integrations/llms/pydantic-ai/)
 - [Scorecard Documentation](https://docs.scorecard.io)
 - [OpenTelemetry Python](https://opentelemetry.io/docs/languages/python/)
 
 ## Why This Approach?
 
-Using Logfire with Scorecard gives you the best of both worlds:
+Using PydanticAI + Logfire + Scorecard gives you the best of all worlds:
+- **PydanticAI**: Type-safe agents, structured outputs, built-in validation
 - **Logfire**: Beautiful DX, automatic instrumentation, structured logging
 - **Scorecard**: Powerful evaluation, testing, and quality assurance for AI applications
 
-The combination is significantly more ergonomic than raw OpenTelemetry while maintaining full compatibility and flexibility!
+The combination is significantly more ergonomic than raw OpenTelemetry while maintaining full compatibility and flexibility, plus you get validated structured outputs from your LLM calls!

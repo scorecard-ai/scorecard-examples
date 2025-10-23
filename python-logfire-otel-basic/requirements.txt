@@ -1,2 +1,3 @@
 logfire>=1.0.0
+pydantic-ai>=0.0.14
 openai>=1.0.0
