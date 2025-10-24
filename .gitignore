@@ -33,3 +33,5 @@ ehthumbs.db
 Thumbs.db
 
 venv/
+
+__pycache__/
