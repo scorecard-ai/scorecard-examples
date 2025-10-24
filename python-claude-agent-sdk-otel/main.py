@@ -17,10 +17,11 @@ from opentelemetry.semconv.resource import ResourceAttributes
 
 # Configuration
 SCORECARD_API_KEY = os.getenv("SCORECARD_API_KEY", "<YOUR_SCORECARD_API_KEY>")
-ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "<YOUR_ANTHROPIC_API_KEY>")
 OTLP_ENDPOINT = "https://tracing.scorecard.io/otel/v1/traces"
-MODEL = "claude-sonnet-4-5"
 SCORECARD_PROJECT_ID = "<YOUR_SCORECARD_PROJECT_ID>" # optional
+
+ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "<YOUR_ANTHROPIC_API_KEY>")
+MODEL = "claude-haiku-4-5"
 
 # Setup OpenTelemetry with Scorecard
 resource = Resource.create({
