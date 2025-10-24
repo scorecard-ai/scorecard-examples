@@ -36,31 +36,25 @@ python main.py
 
 ## How It Works
 
-This example demonstrates **decorator-based instrumentation** of Claude API calls using OpenTelemetry:
+This example uses OpenTelemetry's **built-in decorator** for simple instrumentation:
 
-1. **Set up OpenTelemetry SDK** - Configure TracerProvider with OTLP exporter
-2. **Create reusable decorators** - `@traced_workflow` and `@traced_gen_ai`
-3. **Decorate functions** - Simply add decorators to instrument any function
-4. **Add Gen AI attributes** - Automatically capture semantic conventions
-5. **Export traces** - Send to Scorecard via OTLP
+1. **Setup** - Configure TracerProvider with OTLP exporter
+2. **Decorate** - Use `@tracer.start_as_current_span("span-name")`
+3. **Add attributes** - Use `span.set_attributes()` for Gen AI conventions
+4. **Done** - Traces automatically export to Scorecard
 
-### Decorator Pattern
+### Simple Example
 
 ```python
-# Workflow-level tracing
-@traced_workflow("my-workflow")
-def my_workflow():
-    # Your workflow logic
-    pass
-
-# Gen AI operation tracing
-@traced_gen_ai("chat")
+@tracer.start_as_current_span("gen_ai.chat")
 def call_claude(prompt: str):
-    # Get current span to add custom attributes
     span = trace.get_current_span()
-    span.set_attribute("gen_ai.request.model", "claude-3-5-sonnet")
+    span.set_attributes({
+        "gen_ai.system": "anthropic",
+        "gen_ai.request.model": "claude-3-5-sonnet",
+    })
     # Make API call
-    pass
+    return client.messages.create(...)
 ```
 
 ### Gen AI Semantic Conventions
@@ -98,30 +92,13 @@ generate-cat-facts-workflow (root span)
         └── gen_ai.usage.output_tokens: 42
 ```
 
-## Benefits of Decorator-Based Instrumentation
+## Why This Approach?
 
-✅ **Clean code** - No nested context managers, just simple decorators  
-✅ **Reusable** - Define once, use everywhere  
-✅ **Composable** - Stack multiple decorators for different concerns  
-✅ **Full control** over span hierarchy and attributes  
-✅ **Standardized** Gen AI semantic conventions  
-✅ **Automatic error handling** - Decorators capture exceptions automatically  
-✅ **Performance metrics** - Duration tracking built into decorators  
-
-### Decorator Features
-
-The example includes two decorators:
-
-1. **`@traced_workflow(name)`** - Creates a workflow-level span
-   - Automatically tracks success/failure
-   - Captures exceptions with full context
-   - Adds workflow metadata
-
-2. **`@traced_gen_ai(operation)`** - Creates a Gen AI operation span
-   - Follows Gen AI semantic conventions
-   - Tracks timing automatically
-   - Handles errors gracefully
-   - Allows custom attributes via `trace.get_current_span()`
+✅ **Simple** - Uses OpenTelemetry's built-in `@tracer.start_as_current_span()`  
+✅ **No custom decorators** - Just standard OpenTelemetry  
+✅ **Automatic error handling** - Exceptions captured automatically  
+✅ **Batch attributes** - Use `set_attributes()` instead of multiple `set_attribute()` calls  
+✅ **Gen AI conventions** - Easy to follow semantic conventions
 
 ## Resources
 
