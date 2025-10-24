@@ -20,11 +20,13 @@ SCORECARD_API_KEY = os.getenv("SCORECARD_API_KEY", "<YOUR_SCORECARD_API_KEY>")
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "<YOUR_ANTHROPIC_API_KEY>")
 OTLP_ENDPOINT = "https://tracing.scorecard.io/otel/v1/traces"
 MODEL = "claude-sonnet-4-5"
+SCORECARD_PROJECT_ID = "<YOUR_SCORECARD_PROJECT_ID>" # optional
 
 # Setup OpenTelemetry with Scorecard
 resource = Resource.create({
     ResourceAttributes.SERVICE_NAME: "claude-agent",
     ResourceAttributes.SERVICE_VERSION: "1.0.0",
+    "scorecard.project_id": SCORECARD_PROJECT_ID,
 })
 
 trace_provider = TracerProvider(resource=resource)
@@ -51,6 +53,8 @@ async def run_agent_step(client: ClaudeSDKClient, prompt: str) -> str:
         "gen_ai.operation.name": "chat",
     })
     span.set_attribute("gen_ai.prompt", prompt)
+    
+    print(f"→ Calling Claude: {prompt[:60]}...")
     
     # Call Claude
     await client.query(prompt)
@@ -79,12 +83,15 @@ async def run_agent_step(client: ClaudeSDKClient, prompt: str) -> str:
         "gen_ai.usage.output_tokens": output_tokens,
     })
     
+    print(f"✓ Response: {output[:60]}... ({input_tokens}→{output_tokens} tokens)\n")
+    
     return output
 
 
 @tracer.start_as_current_span("agent-workflow")
 async def research_workflow():
     """Multi-step agent workflow with Gen AI tracing."""
+    print("Starting multi-step agent workflow...\n")
     
     # Configure Claude agent
     options = ClaudeAgentOptions(
@@ -120,11 +127,11 @@ async def main():
     """Run the agent workflow and send traces to Scorecard."""
     result = await research_workflow()
     
-    print(f"\nResult:\n{result}\n")
+    print(f"Final Result:\n{result}\n")
     
     # Flush traces to Scorecard
     trace.get_tracer_provider().force_flush()
-    print("✓ Traces sent to Scorecard")
+    print("✓ Traces sent to Scorecard\n")
 
 
 if __name__ == "__main__":
