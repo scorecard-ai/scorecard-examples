@@ -1,6 +1,12 @@
 # Python Claude Agent SDK with Multi-Step Workflow + OpenTelemetry
 
-A multi-step research agent using the Claude Agent SDK with OpenTelemetry observability.
+A multi-step research agent using the Claude Agent SDK that sends OpenTelemetry traces to Scorecard.
+
+There are three steps:
+
+1. List 5 interesting facts about cats.
+2. What is the most surprising fact and why?
+3. Create a brief summary.
 
 ## Installation
 
@@ -12,31 +18,22 @@ pip install -r requirements.txt
 
 Set environment variables in `main.py`:
 
-```python
-SCORECARD_API_KEY = os.getenv("SCORECARD_API_KEY", "<YOUR_SCORECARD_API_KEY>")
-ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "<YOUR_ANTHROPIC_API_KEY>")
-SCORECARD_PROJECT_ID = "<YOUR_SCORECARD_PROJECT_ID>"
-```
+* `SCORECARD_API_KEY`
+* `SCORECARD_PROJECT_ID`
+* `ANTHROPIC_API_KEY`
 
 Or export them before running:
 
 ```bash
 export SCORECARD_API_KEY="your_scorecard_api_key"
+export SCORECARD_PROJECT_ID="your_anthropic_api_key"
 export ANTHROPIC_API_KEY="your_anthropic_api_key"
 ```
 
-## Running
+## Run
 
-Run directly:
+Run with:
 
 ```bash
 python main.py
 ```
-
-Or use the convenience script:
-
-```bash
-./run.sh
-```
-
-The example runs a 3-step research workflow about cats and sends traces to Scorecard.

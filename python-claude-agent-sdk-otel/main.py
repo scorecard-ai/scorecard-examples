@@ -59,13 +59,14 @@ tracer = trace.get_tracer(__name__)
 
 
 @tracer.start_as_current_span("agent.step")
-async def run_agent_step(client: ClaudeSDKClient, prompt: str) -> str:
+async def run_agent_step(client: ClaudeSDKClient, step_name: str, prompt: str) -> str:
     """Execute a single agent step with Gen AI semantic conventions."""
     span = trace.get_current_span()
 
     # Set Gen AI attributes for the request
     span.set_attributes(
         {
+            "step_name": step_name,
             "gen_ai.system": "anthropic",
             "gen_ai.request.model": MODEL,
             "gen_ai.operation.name": "chat",
@@ -110,7 +111,7 @@ async def run_agent_step(client: ClaudeSDKClient, prompt: str) -> str:
 
 
 @tracer.start_as_current_span("agent-workflow")
-async def research_workflow():
+async def research_workflow(topic: str):
     """Multi-step agent workflow with Gen AI tracing."""
     print("Starting multi-step agent workflow...\n")
 
@@ -124,23 +125,28 @@ async def research_workflow():
 
     async with ClaudeSDKClient(options=options) as client:
         # Step 1: Gather facts
-        facts = await run_agent_step(client, "List 5 interesting facts about cats.")
+        facts = await run_agent_step(
+            client, "gather_facts", f"List 5 interesting facts about {topic}."
+        )
 
         # Step 2: Analyze
         analysis = await run_agent_step(
             client,
+            "analyze_facts",
             f"Based on these facts:\n{facts}\n\nWhat is the most surprising fact and why?",
         )
 
         # Step 3: Summarize
-        summary = await run_agent_step(client, f"Create a brief summary:\n{analysis}")
+        summary = await run_agent_step(
+            client, "summarize_facts", f"Create a brief summary:\n{analysis}"
+        )
 
         return summary
 
 
 async def main():
     """Run the agent workflow and send traces to Scorecard."""
-    result = await research_workflow()
+    result = await research_workflow(topic="cats")
 
     print(f"Final Result:\n{result}\n")
 
