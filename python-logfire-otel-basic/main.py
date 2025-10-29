@@ -13,9 +13,11 @@ from pydantic_ai import Agent
 # 1. OTEL_EXPORTER_OTLP_ENDPOINT: Scorecard's OTLP endpoint, this is where the traces will be sent
 # 2. OTEL_EXPORTER_OTLP_HEADERS: Scorecard's API key, this is used to authenticate
 # 3. OPENAI_API_KEY: PydanticAI requires an OpenAI API key if using OpenAI models
+# 4. OTEL_RESOURCE_ATTRIBUTES: Add scorecard.project_id for monitoring
 os.environ['OTEL_EXPORTER_OTLP_ENDPOINT'] = 'https://tracing.scorecard.io/otel'
 os.environ['OTEL_EXPORTER_OTLP_HEADERS'] = f'Authorization=Bearer <YOUR_SCORECARD_API_KEY>'
 os.environ['OPENAI_API_KEY'] = "<YOUR_OPENAI_API_KEY>"
+os.environ['OTEL_RESOURCE_ATTRIBUTES'] = 'scorecard.project_id=<YOUR_SCORECARD_PROJECT_ID>'
 
 # Initialize Logfire
 logfire.configure(
