@@ -11,6 +11,6 @@
   "description": "",
   "dependencies": {
     "openai": "^4.91.1",
-    "scorecard-ai": "^0.6.1"
+    "scorecard-ai": "^2.6.0"
   }
 }
