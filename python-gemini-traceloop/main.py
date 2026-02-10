@@ -111,4 +111,5 @@ def run_conversation():
     )
 
 
-run_conversation()
+if __name__ == "__main__":
+    run_conversation()
